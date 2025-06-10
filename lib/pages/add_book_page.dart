@@ -2,49 +2,28 @@ import 'package:flutter/material.dart';
 import 'package:tugas13_flutter/database/database_helper.dart';
 import 'package:tugas13_flutter/model/buku_model.dart';
 
-class EditBookPage extends StatefulWidget {
-  final BookModel book;
-
-  const EditBookPage({super.key, required this.book});
+class AddBookPage extends StatefulWidget {
+  const AddBookPage({super.key});
 
   @override
-  State<EditBookPage> createState() => _EditBookPageState();
+  State<AddBookPage> createState() => _AddBookPageState();
 }
 
-class _EditBookPageState extends State<EditBookPage> {
+class _AddBookPageState extends State<AddBookPage> {
   final _formKey = GlobalKey<FormState>();
-  late TextEditingController _titleController;
-  late TextEditingController _authorController;
-  late TextEditingController _descriptionController;
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _authorController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
 
-  @override
-  void initState() {
-    super.initState();
-    _titleController = TextEditingController(text: widget.book.title);
-    _authorController = TextEditingController(text: widget.book.author);
-    _descriptionController = TextEditingController(
-      text: widget.book.description,
-    );
-  }
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _authorController.dispose();
-    _descriptionController.dispose();
-    super.dispose();
-  }
-
-  void _saveBook() async {
+  Future<void> _saveBook() async {
     if (_formKey.currentState!.validate()) {
-      final updatedBook = BookModel(
-        id: widget.book.id,
+      final book = BookModel(
         title: _titleController.text,
         author: _authorController.text,
         description: _descriptionController.text,
       );
 
-      await DatabaseHelper.instance.updateBook(updatedBook);
+      await DatabaseHelper.instance.insertBook(book);
 
       if (mounted) {
         final snackBar = SnackBar(
@@ -54,7 +33,7 @@ class _EditBookPageState extends State<EditBookPage> {
               SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Buku berhasil diperbarui',
+                  'Buku berhasil ditambahkan',
                   style: TextStyle(
                     color: Colors.teal.shade900,
                     fontWeight: FontWeight.w600,
@@ -74,7 +53,7 @@ class _EditBookPageState extends State<EditBookPage> {
           elevation: 1.0,
         );
         ScaffoldMessenger.of(context).showSnackBar(snackBar);
-        Navigator.pop(context, true);
+        Navigator.pop(context);
       }
     }
   }
@@ -86,14 +65,17 @@ class _EditBookPageState extends State<EditBookPage> {
       appBar: AppBar(
         centerTitle: true,
         title: Text(
-          'Edit Buku',
+          'Tambah Buku Baru',
           style: TextStyle(
             color: Colors.teal,
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
         ),
-        foregroundColor: Colors.teal,
+        leading: IconButton(
+          icon: Icon(Icons.close, color: Colors.teal),
+          onPressed: () => Navigator.pop(context),
+        ),
         elevation: 0.5,
         backgroundColor: Colors.white,
       ),
@@ -116,7 +98,7 @@ class _EditBookPageState extends State<EditBookPage> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Edit Detail Buku',
+                      'Detail Buku',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -164,8 +146,8 @@ class _EditBookPageState extends State<EditBookPage> {
 
                     ElevatedButton.icon(
                       onPressed: _saveBook,
-                      icon: Icon(Icons.save_as_rounded),
-                      label: Text('Simpan Perubahan'),
+                      icon: Icon(Icons.save_alt_rounded),
+                      label: Text('Simpan Buku'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.teal,
                         foregroundColor: Colors.white,

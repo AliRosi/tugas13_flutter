@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:tugas13_flutter/pages/home_page.dart';
+import 'package:tugas13_flutter/pages/home_screen.dart';
 import 'package:tugas13_flutter/pages/login_screen.dart';
 import 'package:tugas13_flutter/pages/regist_screen.dart';
 import 'package:tugas13_flutter/pages/splash_scree.dart';
@@ -23,8 +23,8 @@ class MyApp extends StatelessWidget {
       initialRoute: '/',
       routes: {
         '/': (context) => const SplashScreen(),
-        '/login': (context) => const LoginPage(),
-        '/register': (context) => const RegisterPage(),
+        '/login': (context) => const LoginScreen(),
+        '/register': (context) => const RegisterScreen(),
         '/home': (context) => const HomeScreen(),
       },
     );

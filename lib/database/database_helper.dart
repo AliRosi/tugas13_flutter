@@ -34,26 +34,23 @@ class DatabaseHelper {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT NOT NULL,
         author TEXT NOT NULL,
-        description TEXT
+        description TEXT,
+        isRead INTEGER NOT NULL DEFAULT 0 
       )
     ''');
   }
 
-  // Insert book
   Future<int> insertBook(BookModel book) async {
     final db = await database;
     return await db.insert(tableBook, book.toMap());
   }
 
-  // Get all books
   Future<List<BookModel>> getBooks() async {
     final db = await database;
     final maps = await db.query(tableBook, orderBy: 'id DESC');
-
     return maps.map((map) => BookModel.fromMap(map)).toList();
   }
 
-  // Update book
   Future<int> updateBook(BookModel book) async {
     final db = await database;
     return await db.update(
@@ -64,17 +61,14 @@ class DatabaseHelper {
     );
   }
 
-  // Delete book
   Future<int> deleteBook(int id) async {
     final db = await database;
     return await db.delete(tableBook, where: 'id = ?', whereArgs: [id]);
   }
 
-  // Get a single book by ID (optional)
   Future<BookModel?> getBookById(int id) async {
     final db = await database;
     final maps = await db.query(tableBook, where: 'id = ?', whereArgs: [id]);
-
     if (maps.isNotEmpty) {
       return BookModel.fromMap(maps.first);
     } else {

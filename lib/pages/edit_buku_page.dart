@@ -42,6 +42,7 @@ class _EditBookPageState extends State<EditBookPage> {
         title: _titleController.text,
         author: _authorController.text,
         description: _descriptionController.text,
+        isRead: widget.book.isRead,
       );
 
       await DatabaseHelper.instance.updateBook(updatedBook);
@@ -123,7 +124,6 @@ class _EditBookPageState extends State<EditBookPage> {
                       ),
                     ),
                     SizedBox(height: 24),
-
                     TextFormField(
                       controller: _titleController,
                       decoration: _buildInputDecoration(
@@ -137,7 +137,6 @@ class _EditBookPageState extends State<EditBookPage> {
                                   : null,
                     ),
                     SizedBox(height: 16),
-
                     TextFormField(
                       controller: _authorController,
                       decoration: _buildInputDecoration(
@@ -151,7 +150,6 @@ class _EditBookPageState extends State<EditBookPage> {
                                   : null,
                     ),
                     SizedBox(height: 16),
-
                     TextFormField(
                       controller: _descriptionController,
                       maxLines: 4,
@@ -161,7 +159,6 @@ class _EditBookPageState extends State<EditBookPage> {
                       ),
                     ),
                     SizedBox(height: 32),
-
                     ElevatedButton.icon(
                       onPressed: _saveBook,
                       icon: Icon(Icons.save_as_rounded),

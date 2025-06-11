@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tugas13_flutter/database/database_helper.dart';
 import 'package:tugas13_flutter/model/buku_model.dart';
-import 'package:tugas13_flutter/pages/detail_book_page.dart';
 import 'package:tugas13_flutter/pages/add_book_page.dart';
+import 'package:tugas13_flutter/pages/detail_book_page.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -13,8 +13,10 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  List<BookModel> bookList = [];
-  int _selectedIndex = 0;
+  List<BookModel> _unreadBooks = [];
+  List<BookModel> _readBooks = [];
+
+  int _bottomNavIndex = 0;
 
   @override
   void initState() {
@@ -23,12 +25,27 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadBooks() async {
-    final data = await DatabaseHelper.instance.getBooks();
+    final allBooks = await DatabaseHelper.instance.getBooks();
     if (mounted) {
       setState(() {
-        bookList = data;
+        _unreadBooks = allBooks.where((book) => !book.isRead).toList();
+        _readBooks = allBooks.where((book) => book.isRead).toList();
       });
     }
+  }
+
+  Future<void> _toggleReadStatus(BookModel book, bool? newValue) async {
+    final updatedBook = BookModel(
+      id: book.id,
+      title: book.title,
+      author: book.author,
+      description: book.description,
+      isRead: newValue ?? false,
+    );
+
+    await DatabaseHelper.instance.updateBook(updatedBook);
+
+    _loadBooks();
   }
 
   void _showLogoutConfirmation() {
@@ -66,45 +83,82 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _onNavTapped(int index) {
     setState(() {
-      _selectedIndex = index;
+      _bottomNavIndex = index;
     });
   }
 
-  Widget _buildBookList() {
-    if (bookList.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+  Widget _buildBookPage() {
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          elevation: 0.5,
+          backgroundColor: Colors.white,
+          centerTitle: true,
+          title: Text(
+            '📚 Koleksi Buku',
+            style: TextStyle(
+              color: Colors.teal,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+          ),
+          actions: [
+            IconButton(
+              icon: Icon(Icons.logout, color: Colors.teal),
+              onPressed: _showLogoutConfirmation,
+              tooltip: 'Logout',
+            ),
+          ],
+          bottom: const TabBar(
+            indicatorColor: Colors.teal,
+            labelColor: Colors.teal,
+            unselectedLabelColor: Colors.grey,
+            tabs: [Tab(text: 'Belum Dibaca'), Tab(text: 'Sudah Dibaca')],
+          ),
+        ),
+        body: TabBarView(
           children: [
-            Icon(
-              Icons.library_books_outlined,
-              size: 60,
-              color: Colors.grey.shade400,
-            ),
-            SizedBox(height: 16),
-            Text(
-              "Koleksi Buku Kosong",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.black54,
-              ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              "Ketuk 'Tambahkan Buku' untuk memulai.",
-              style: TextStyle(color: Colors.grey.shade600),
+            _buildBookCategoryList(_unreadBooks, 'Belum ada buku di rak ini.'),
+            _buildBookCategoryList(
+              _readBooks,
+              'Anda belum membaca buku apapun.',
             ),
           ],
         ),
+        floatingActionButton: FloatingActionButton.extended(
+          backgroundColor: Colors.teal,
+          onPressed:
+              () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AddBookPage()),
+              ).then((_) => _loadBooks()),
+          icon: Icon(Icons.add, color: Colors.white),
+          label: Text(
+            'Tambahkan Buku',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      ),
+    );
+  }
+
+  Widget _buildBookCategoryList(List<BookModel> books, String emptyMessage) {
+    if (books.isEmpty) {
+      return Center(
+        child: Text(emptyMessage, style: TextStyle(color: Colors.grey)),
       );
     }
 
     return ListView.builder(
-      padding: EdgeInsets.fromLTRB(16, 20, 16, 80),
-      itemCount: bookList.length,
+      padding: EdgeInsets.fromLTRB(16, 20, 16, 96),
+      itemCount: books.length,
       itemBuilder: (context, index) {
-        final book = bookList[index];
+        final book = books[index];
         return Card(
           elevation: 1.5,
           // ignore: deprecated_member_use
@@ -114,26 +168,17 @@ class _HomeScreenState extends State<HomeScreen> {
             borderRadius: BorderRadius.circular(14),
           ),
           child: ListTile(
-            contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-            leading: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.menu_book_rounded, color: Colors.teal, size: 30),
-                SizedBox(width: 12),
-                CircleAvatar(
-                  radius: 15,
-                  // ignore: deprecated_member_use
-                  backgroundColor: Colors.teal.withOpacity(0.1),
-                  child: Text(
-                    book.id.toString(),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.teal.shade800,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+            contentPadding: EdgeInsets.fromLTRB(16, 8, 8, 8),
+            leading: CircleAvatar(
+              // ignore: deprecated_member_use
+              backgroundColor: Colors.teal.withOpacity(0.1),
+              child: Text(
+                book.id.toString(),
+                style: TextStyle(
+                  color: Colors.teal.shade800,
+                  fontWeight: FontWeight.bold,
                 ),
-              ],
+              ),
             ),
             title: Text(
               book.title,
@@ -147,7 +192,13 @@ class _HomeScreenState extends State<HomeScreen> {
               book.author,
               style: TextStyle(color: Colors.grey.shade700),
             ),
-            trailing: Icon(Icons.chevron_right, color: Colors.grey),
+            trailing: Checkbox(
+              value: book.isRead,
+              onChanged: (bool? newValue) {
+                _toggleReadStatus(book, newValue);
+              },
+              activeColor: Colors.teal,
+            ),
             onTap: () {
               Navigator.push(
                 context,
@@ -169,74 +220,24 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final List<Widget> pages = [_buildBookList(), const InfoWidget()];
+    final List<Widget> pages = [_buildBookPage(), const InfoWidget()];
 
     return Scaffold(
-      backgroundColor: Color(0xFFF9F9F9),
-      appBar: AppBar(
-        centerTitle: true,
-        title: Text(
-          _selectedIndex == 0 ? 'Daftar Buku' : 'Tentang Aplikasi',
-          style: TextStyle(
-            color: Colors.teal,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
-        elevation: 0.5,
-        backgroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.logout, color: Colors.teal),
-            onPressed: _showLogoutConfirmation,
-            tooltip: 'Logout',
-          ),
-        ],
-      ),
-
-      body: IndexedStack(index: _selectedIndex, children: pages),
-      floatingActionButton:
-          _selectedIndex == 0
-              ? FloatingActionButton.extended(
-                backgroundColor: Colors.teal,
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const AddBookPage()),
-                  ).then((_) => _loadBooks());
-                },
-                icon: Icon(Icons.add, color: Colors.white),
-                label: Text(
-                  'Tambahkan Buku',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              )
-              : null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      backgroundColor: const Color(0xFFF2F5F9),
+      body: IndexedStack(index: _bottomNavIndex, children: pages),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
+        currentIndex: _bottomNavIndex,
         onTap: _onNavTapped,
         selectedItemColor: Colors.teal,
-        unselectedItemColor: Colors.grey.shade500,
-        backgroundColor: Colors.white,
-        elevation: 1.0,
-
-        selectedLabelStyle: TextStyle(fontWeight: FontWeight.bold),
+        unselectedItemColor: Colors.grey,
+        showUnselectedLabels: false,
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.book_outlined),
-            activeIcon: Icon(Icons.book),
-            label: 'Buku',
+            icon: Icon(Icons.library_books_outlined),
+            label: 'Koleksi',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.info_outline),
-            activeIcon: Icon(Icons.info),
             label: 'Info',
           ),
         ],
@@ -251,21 +252,19 @@ class InfoWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Color(0xFFF9F9F9),
       padding: EdgeInsets.all(24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          SizedBox(height: 32),
           Text(
-            '📖  Bookshelf',
+            '📘 Tentang Aplikasi',
             style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           ),
           SizedBox(height: 16),
           Text(
-            'Aplikasi ini digunakan untuk mencatat dan mengelola daftar buku yang telah dibaca atau dimiliki pengguna. '
-            'Fitur-fitur yang tersedia meliputi tambah buku, edit, hapus, dan lihat detail buku.',
-            textAlign: TextAlign.justify,
-
+            'Aplikasi ini dibuat untuk membantu mencatat dan mengelola daftar buku bacaan pengguna.\n\n'
+            'Anda dapat menambahkan buku, menandai sudah dibaca, dan melihat detail buku dengan mudah.',
             style: TextStyle(
               height: 1.5,
               fontSize: 15,
